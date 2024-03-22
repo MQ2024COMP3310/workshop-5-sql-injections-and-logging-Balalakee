@@ -21,7 +21,7 @@ public class App {
         // must set before the Logger
         // loads logging.properties from the classpath
         try {// resources\logging.properties
-            LogManager.getLogManager().readConfiguration(new FileInputStream("resources/logging.properties"));
+            LogManager.getLogManager().readConfiguration(new FileInputStream("resources/home/logging.properties"));
         } catch (SecurityException | IOException e1) {
             e1.printStackTrace();
         }
@@ -38,15 +38,19 @@ public class App {
 
         wordleDatabaseConnection.createNewDatabase("words.db");
         if (wordleDatabaseConnection.checkIfConnectionDefined()) {
-            System.out.println("Wordle created and connected.");
+            logger.log(Level.INFO,"Wordle created and connected.");
+            System.out.println("Loading...");
         } else {
             System.out.println("Not able to connect. Sorry!");
+            logger.log(Level.INFO, "Not able to connect. Sorry!");
             return;
         }
         if (wordleDatabaseConnection.createWordleTables()) {
-            System.out.println("Wordle structures in place.");
+            logger.log(Level.INFO,"Wordle structures in place.");
+            System.out.println("Loading...");
         } else {
             System.out.println("Not able to launch. Sorry!");
+            logger.log(Level.INFO,"Not able to launch. Sorry!");
             return;
         }
 
@@ -56,14 +60,15 @@ public class App {
             String line;
             int i = 1;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
+                logger.log(Level.INFO,line);
                 wordleDatabaseConnection.addValidWord(i, line);
                 i++;
             }
+            System.out.println("Finished Loading!");
 
         } catch (IOException e) {
-            System.out.println("Not able to load . Sorry!");
-            System.out.println(e.getMessage());
+            System.out.println("Not able to load. Sorry!");
+            logger.log(Level.WARNING, e.getMessage(), e);
             return;
         }
 
@@ -72,21 +77,27 @@ public class App {
         try (Scanner scanner = new Scanner(System.in)) {
             System.out.print("Enter a 4 letter word for a guess or q to quit: ");
             String guess = scanner.nextLine();
-
             while (!guess.equals("q")) {
+                if (guess.matches("\\p{javaLowerCase}*") && guess.length() == 4) {
                 System.out.println("You've guessed '" + guess+"'.");
 
                 if (wordleDatabaseConnection.isValidWord(guess)) { 
                     System.out.println("Success! It is in the the list.\n");
                 }else{
                     System.out.println("Sorry. This word is NOT in the the list.\n");
+                    logger.log(Level.INFO, "The guess, '" + guess + "'' was NOT on the list.");
                 }
+            }
+            else {
+                System.out.println("Sorry, the guess was formatted incorrectly.");
+                logger.log(Level.SEVERE, "WARNING!!! The guess, '" + guess + "'' was an invalid input");
+            }
 
                 System.out.print("Enter a 4 letter word for a guess or q to quit: " );
                 guess = scanner.nextLine();
             }
         } catch (NoSuchElementException | IllegalStateException e) {
-            e.printStackTrace();
+            logger.log(Level.WARNING, e.getMessage(), e);
         }
 
     }
